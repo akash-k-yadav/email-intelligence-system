@@ -32,7 +32,7 @@ Most email providers handle spam/phishing filtering as a black box. The user nev
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/akasH-yad-aV/email-intelligence-system.git
+git clone https://github.com/akash-k-yadav/email-intelligence-system.git
 cd email-intelligence-system
 ```
 
