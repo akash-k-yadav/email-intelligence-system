@@ -1,0 +1,26 @@
+{
+  "model_name": "otp_detector",
+  "version": "2.0.0",
+  "trained_date": "2026-05-06T11:11:49.735832",
+  "type": "rule_based",
+  "description": "Regex and keyword based OTP detection",
+  "patterns": [
+    "\\b\\d{4,8}\\b",
+    "\\b[A-Z0-9]{4,8}\\b"
+  ],
+  "keywords": [
+    "otp",
+    "one-time",
+    "verification code",
+    "security code",
+    "authentication code",
+    "access code",
+    "pin code",
+    "2fa",
+    "two-factor",
+    "verify your",
+    "confirmation code"
+  ],
+  "priority": "Applied after spam and phishing checks in rules_engine.py",
+  "note": "OTP label is assigned only when email is not spam or phishing"
+}

@@ -1,0 +1,224 @@
+<!-- File: ui/templates/email_detail.html -->
+{% extends "base.html" %}
+
+{% block title %}Email Detail - Email Intelligence{% endblock %}
+
+{% block content %}
+<div class="email-detail-container">
+    <div class="email-detail-header">
+        <button onclick="history.back()" class="btn btn-secondary">← Back to Inbox</button>
+    </div>
+
+    <div id="emailContent" class="loading">Loading email...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pathParts = window.location.pathname.split('/');
+const emailId = parseInt(pathParts[pathParts.length - 1]);
+
+async function loadEmail() {
+    try {
+        const response = await fetch(`/emails/${emailId}`);
+        const email = await response.json();
+
+        if (email.error) {
+            document.getElementById('emailContent').innerHTML =
+                `<div class="error">${email.error}</div>`;
+            return;
+        }
+
+        const classification = email.classification || {};
+        const confidence = classification.confidence || 0;
+        const categoryScores = classification.category_scores || {};
+
+        document.getElementById('emailContent').innerHTML = `
+            <div class="email-detail">
+
+                <!-- Subject + Meta -->
+                <div class="email-header-section">
+                    <h2>${escapeHtml(email.subject)}</h2>
+                    <div class="email-meta-info">
+                        <p><strong>From:</strong> ${escapeHtml(email.from)}</p>
+                        <p><strong>To:</strong> ${escapeHtml(email.to)}</p>
+                        <p><strong>Date:</strong> ${formatDate(email.date)}</p>
+                        <p><strong>Message ID:</strong> <span style="font-size:0.8rem; color:#999;">${escapeHtml(email.message_id)}</span></p>
+                    </div>
+                </div>
+
+                <!-- Classification -->
+                <div class="classification-box">
+                    <h3>Classification</h3>
+                    <div class="classification-info">
+                        ${(classification.phishing_score >= 0.70 && classification.label !== 'PHISHING') ? `
+                        <div style="
+                            background: #fff8e1;
+                            border-left: 4px solid #ff9800;
+                            border-radius: 6px;
+                            padding: 10px 14px;
+                            margin-bottom: 12px;
+                            font-size: 0.88rem;
+                            color: #5d4037;
+                            display: flex;
+                            align-items: flex-start;
+                            gap: 8px;
+                        ">
+                            <span style="font-size:1.1rem;">⚠️</span>
+                            <span>
+                                <strong>Note:</strong> Phishing score is high
+                                (${(classification.phishing_score * 100).toFixed(1)}%) but the final label
+                                was adjusted to <strong>${classification.label}</strong> based on
+                                ${classification.label === 'OTP' ? 'OTP detection taking priority.' :
+                                  'sender reputation — this domain is considered trusted.'}
+                            </span>
+                        </div>` : ''}
+                        <p>
+                            <strong>Label:</strong>
+                            <span class="email-label label-${(classification.label || 'unknown').toLowerCase()}">
+                                ${classification.label || 'UNKNOWN'}
+                            </span>
+                        </p>
+                        <p>
+                            <strong>Confidence:</strong>
+                            <span style="color:${getConfidenceColor(confidence)}; font-weight:700; font-size:1.1rem;">
+                                ${(confidence * 100).toFixed(1)}%
+                            </span>
+                            <span class="confidence-badge confidence-${getConfidenceTier(confidence)}">
+                                ${getConfidenceLabel(confidence)}
+                            </span>
+                        </p>
+                        <p><strong>Spam Score:</strong>
+                            <span style="color:${getConfidenceColor(1 - (classification.spam_score || 0))};">
+                                ${((classification.spam_score || 0) * 100).toFixed(1)}%
+                            </span>
+                        </p>
+                        <p><strong>Phishing Score:</strong>
+                            <span style="color:${getConfidenceColor(1 - (classification.phishing_score || 0))};">
+                                ${((classification.phishing_score || 0) * 100).toFixed(1)}%
+                            </span>
+                        </p>
+                        <p><strong>Contains OTP:</strong>
+                            <span style="color:${classification.contains_otp ? '#2196f3' : '#4caf50'}; font-weight:600;">
+                                ${classification.contains_otp ? '🔐 Yes' : 'No'}
+                            </span>
+                        </p>
+                    </div>
+
+                    <!-- Category Probability Bars -->
+                    <div class="category-scores">
+                        <h4>Category Probabilities:</h4>
+                        ${Object.entries(categoryScores).map(([cat, score]) => `
+                            <div class="score-bar">
+                                <span>${cat}</span>
+                                <div class="bar">
+                                    <div class="bar-fill ${getBarClass(score)}" style="width:${score * 100}%"></div>
+                                </div>
+                                <span style="color:${getConfidenceColor(score)}; font-weight:600;">
+                                    ${(score * 100).toFixed(1)}%
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Relabel -->
+                    <div class="relabel-section">
+                        <h4>Relabel Email:</h4>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                            <select id="newLabel" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px; font-size:0.9rem; min-width:180px;">
+                                <option value="PRIMARY">Primary</option>
+                                <option value="PROMOTIONS">Promotions</option>
+                                <option value="SOCIAL">Social</option>
+                                <option value="UPDATES">Updates</option>
+                                <option value="SPAM">Spam</option>
+                                <option value="PHISHING">Phishing</option>
+                                <option value="OTP">OTP</option>
+                            </select>
+                            <button onclick="relabelEmail()" class="btn btn-primary">Update Label</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Body -->
+                <div class="email-body-section">
+                    <h3>Email Body</h3>
+                    <div class="email-body">${escapeHtml(email.body_text || 'No body content available.')}</div>
+                </div>
+
+                <!-- Headers -->
+                <details class="email-headers-section">
+                    <summary><h3>Technical Headers</h3></summary>
+                    <pre>${JSON.stringify(email.headers, null, 2)}</pre>
+                </details>
+
+            </div>
+        `;
+
+    } catch (error) {
+        document.getElementById('emailContent').innerHTML =
+            `<div class="error">Error loading email: ${error.message}</div>`;
+    }
+}
+
+async function relabelEmail() {
+    const newLabel = document.getElementById('newLabel').value;
+
+    try {
+        const response = await fetch(`/emails/${emailId}/relabel`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ label: newLabel })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification(`Email relabeled to ${newLabel}`, 'success');
+            loadEmail();
+        } else {
+            showNotification('Error: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        showNotification('Error relabeling email: ' + error.message, 'error');
+    }
+}
+
+// ── Color helpers ──────────────────────────────────────────
+function getConfidenceColor(score) {
+    if (score >= 0.8) return '#4caf50';   // green
+    if (score >= 0.6) return '#ff9800';   // orange
+    return '#f44336';                      // red
+}
+
+function getConfidenceTier(score) {
+    if (score >= 0.8) return 'high';
+    if (score >= 0.6) return 'medium';
+    return 'low';
+}
+
+function getConfidenceLabel(score) {
+    if (score >= 0.8) return 'High';
+    if (score >= 0.6) return 'Medium';
+    return 'Low';
+}
+
+function getBarClass(score) {
+    if (score >= 0.8) return 'bar-fill-green';
+    if (score >= 0.6) return 'bar-fill-yellow';
+    return 'bar-fill-blue';
+}
+
+// ── Utilities ──────────────────────────────────────────────
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDate(dateStr) {
+    return new Date(dateStr).toLocaleString();
+}
+
+loadEmail();
+</script>
+{% endblock %}

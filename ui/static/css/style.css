@@ -1,0 +1,795 @@
+/* File: ui/static/css/style.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.navbar {
+    background: #1976d2;
+    color: white;
+    padding: 1rem 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.navbar-brand h1 {
+    font-size: 1.5rem;
+    display: inline-block;
+    margin: 0;
+}
+
+.navbar-menu {
+    list-style: none;
+    display: inline-block;
+    float: right;
+    margin-top: 0;
+}
+
+.navbar-menu li {
+    display: inline-block;
+    margin-left: 2rem;
+}
+
+.navbar-menu a {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 5px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.navbar-menu a:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.navbar-menu a.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* ── Main Content ───────────────────────────────────────── */
+.main-content {
+    padding: 2rem 0;
+    min-height: calc(100vh - 160px);
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.footer {
+    background: #333;
+    color: white;
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: 2rem;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-primary {
+    background: #1976d2;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1565c0;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.btn-primary:disabled {
+    background: #90caf9;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: #757575;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #616161;
+}
+
+.btn-danger {
+    background: #f44336;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #d32f2f;
+    transform: translateY(-1px);
+}
+
+.btn-imap {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    font-size: 0.85rem;
+}
+
+.btn-imap:hover {
+    background: #eeeeee;
+    border-color: #bbb;
+}
+
+/* ── Fetch Button Spinner ────────────────────────────────── */
+.btn-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── IMAP Credentials Modal ──────────────────────────────── */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(2px);
+    animation: fadeInOverlay 0.2s ease;
+}
+
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal-card {
+    background: white;
+    border-radius: 12px;
+    padding: 28px;
+    width: 360px;
+    max-width: 90vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: slideUpModal 0.25s ease;
+}
+
+@keyframes slideUpModal {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-input:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.account-badge {
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 16px;
+}
+
+/* ── Inbox Container ─────────────────────────────────────── */
+.inbox-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.inbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.inbox-header h2 {
+    margin: 0;
+    color: #1976d2;
+}
+
+/* ── Filters ─────────────────────────────────────────────── */
+.filters-section {
+    background: #f9f9f9;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 150px;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #666;
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: #1976d2;
+}
+
+.filter-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.tabs {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+    overflow-x: auto;
+}
+
+.tab-button {
+    padding: 0.75rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s;
+    white-space: nowrap;
+    margin-bottom: -2px;
+}
+
+.tab-button:hover {
+    color: #1976d2;
+    background: #f5f5f5;
+    border-radius: 4px 4px 0 0;
+}
+
+.tab-button.active {
+    color: #1976d2;
+    border-bottom-color: #1976d2;
+}
+
+/* ── Email List ──────────────────────────────────────────── */
+.email-list {
+    min-height: 400px;
+}
+
+.email-item {
+    padding: 1rem 1rem 1rem 1.25rem;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+}
+
+.email-item:hover {
+    background: #f8f9ff;
+}
+
+.email-item.unread {
+    background: #e8f4fd;
+}
+
+.email-item.unread:hover {
+    background: #daeefa;
+}
+
+/* Unread blue dot indicator */
+.unread-dot {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: #1976d2;
+    border-radius: 50%;
+}
+
+.email-item.unread .email-sender,
+.email-item.unread .email-subject {
+    font-weight: 700;
+}
+
+.email-sender {
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 0.2rem;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+}
+
+.email-subject {
+    color: #555;
+    margin-bottom: 0.4rem;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
+}
+
+.email-meta {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+}
+
+/* ── Labels ──────────────────────────────────────────────── */
+.email-label {
+    padding: 0.2rem 0.55rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.label-primary     { background: #e8f5e9; color: #2e7d32; }
+.label-promotions  { background: #fff3e0; color: #e65100; }
+.label-social      { background: #e3f2fd; color: #1565c0; }
+.label-updates     { background: #f3e5f5; color: #6a1b9a; }
+.label-spam        { background: #ffebee; color: #c62828; }
+.label-phishing    { background: #fbe9e7; color: #bf360c; }
+.label-otp         { background: #e0f7fa; color: #00695c; }
+.label-unknown     { background: #f5f5f5; color: #757575; }
+
+.email-date {
+    color: #999;
+}
+
+.email-confidence {
+    font-weight: 600;
+}
+
+/* ── Empty State ─────────────────────────────────────────── */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: #aaa;
+}
+
+.empty-state-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+}
+
+.empty-state-msg {
+    font-size: 1rem;
+    color: #999;
+    text-align: center;
+    max-width: 300px;
+    line-height: 1.5;
+}
+
+/* ── Pagination ──────────────────────────────────────────── */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    background: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.pagination button:hover { background: #1565c0; }
+
+.pagination span { color: #666; font-weight: 500; }
+
+/* ── Loading / Error ─────────────────────────────────────── */
+.loading, .no-emails, .error {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
+    font-size: 1rem;
+}
+
+.error { color: #f44336; }
+
+/* ── Email Detail Page ───────────────────────────────────── */
+.email-detail-container {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.email-detail-header {
+    margin-bottom: 1.5rem;
+}
+
+.email-header-section,
+.classification-box,
+.email-body-section,
+.email-headers-section {
+    margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.email-header-section h2 {
+    color: #1976d2;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.email-meta-info p {
+    margin: 0.4rem 0;
+    font-size: 0.9rem;
+}
+
+.email-meta-info strong {
+    color: #888;
+    min-width: 100px;
+    display: inline-block;
+}
+
+/* ── Classification Box ──────────────────────────────────── */
+.classification-box h3,
+.email-body-section h3 {
+    margin-bottom: 1rem;
+    color: #1976d2;
+    font-size: 1.1rem;
+}
+
+.classification-info p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.classification-info strong {
+    color: #888;
+    min-width: 150px;
+    display: inline-block;
+}
+
+/* Confidence badge */
+.confidence-badge {
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.confidence-high   { background: #e8f5e9; color: #2e7d32; }
+.confidence-medium { background: #fff3e0; color: #e65100; }
+.confidence-low    { background: #ffebee; color: #c62828; }
+
+/* ── Category Score Bars ─────────────────────────────────── */
+.category-scores {
+    margin-top: 1.5rem;
+}
+
+.category-scores h4 {
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1rem;
+}
+
+.score-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.6rem 0;
+}
+
+.score-bar span:first-child {
+    min-width: 110px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #555;
+}
+
+.bar {
+    flex: 1;
+    height: 20px;
+    background: #eee;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Colored bar fills */
+.bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1976d2, #2196f3);
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+.bar-fill-green {
+    height: 100%;
+    background: linear-gradient(90deg, #388e3c, #4caf50);
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+.bar-fill-yellow {
+    height: 100%;
+    background: linear-gradient(90deg, #f57c00, #ff9800);
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+.bar-fill-blue {
+    height: 100%;
+    background: linear-gradient(90deg, #1565c0, #1976d2);
+    border-radius: 10px;
+    transition: width 0.6s ease;
+}
+
+.score-bar span:last-child {
+    min-width: 50px;
+    text-align: right;
+    font-weight: 700;
+    font-size: 0.88rem;
+}
+
+/* ── Relabel Section ─────────────────────────────────────── */
+.relabel-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+.relabel-section h4 {
+    margin-bottom: 0.75rem;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+/* ── Email Body ──────────────────────────────────────────── */
+.email-body {
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+    background: white;
+    padding: 1rem;
+    border-radius: 6px;
+    max-height: 500px;
+    overflow-y: auto;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    border: 1px solid #e0e0e0;
+    color: #333;
+}
+
+/* ── Email Headers ───────────────────────────────────────── */
+.email-headers-section {
+    background: #fafafa;
+}
+
+.email-headers-section summary {
+    cursor: pointer;
+    user-select: none;
+    color: #1976d2;
+}
+
+.email-headers-section summary:hover { opacity: 0.8; }
+
+.email-headers-section summary h3 {
+    display: inline;
+    font-size: 1rem;
+}
+
+.email-headers-section pre {
+    background: white;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.82rem;
+    margin-top: 1rem;
+    border: 1px solid #e0e0e0;
+}
+
+/* ── Statistics Page ─────────────────────────────────────── */
+.stats-container {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stats-container h2 {
+    margin-bottom: 2rem;
+    color: #1976d2;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+.stat-card {
+    background: #fafafa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border: 1px solid #e0e0e0;
+}
+
+.stat-card h3 {
+    margin-bottom: 1rem;
+    color: #1976d2;
+    font-size: 1.1rem;
+}
+
+.stat-card canvas { max-height: 300px; }
+
+.stat-card p {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .navbar-menu {
+        float: none;
+        margin-top: 1rem;
+    }
+
+    .navbar-menu li {
+        display: block;
+        margin: 0.5rem 0;
+    }
+
+    .inbox-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .filters-section { flex-direction: column; }
+    .filter-group { width: 100%; }
+    .tabs { flex-wrap: wrap; }
+
+    .email-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+
+    .stats-grid { grid-template-columns: 1fr; }
+
+    .score-bar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .score-bar span:first-child { min-width: auto; }
+    .bar { width: 100%; }
+
+    .modal-card { width: 95vw; padding: 20px; }
+}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #888; }
+
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

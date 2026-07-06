@@ -1,0 +1,30 @@
+{
+  "model_name": "spam_detector",
+  "version": "3.0.0",
+  "model_type": "RandomForest",
+  "feature_based": true,
+  "features": [
+    "num_links",
+    "num_attachments",
+    "has_urgent_words",
+    "has_spam_words",
+    "has_phishing_words",
+    "contains_html",
+    "email_length",
+    "num_exclamations",
+    "num_uppercase_words",
+    "day_of_week",
+    "hour",
+    "is_reply",
+    "is_forward",
+    "sender_reputation",
+    "contains_otp"
+  ],
+  "trained_date": "2026-05-06T11:10:04.864987",
+  "accuracy": 0.9673123486682809,
+  "cv_mean_accuracy": 0.9710581363042916,
+  "cv_std": 0.0023129915035318828,
+  "num_samples": 20646,
+  "spam_samples": 9896,
+  "ham_samples": 10750
+}

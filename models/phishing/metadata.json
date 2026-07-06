@@ -1,0 +1,30 @@
+{
+  "model_name": "phishing_detector",
+  "version": "3.0.0",
+  "model_type": "XGBoost",
+  "feature_based": true,
+  "features": [
+    "num_links",
+    "num_attachments",
+    "has_urgent_words",
+    "has_spam_words",
+    "has_phishing_words",
+    "contains_html",
+    "email_length",
+    "num_exclamations",
+    "num_uppercase_words",
+    "day_of_week",
+    "hour",
+    "is_reply",
+    "is_forward",
+    "sender_reputation",
+    "contains_otp"
+  ],
+  "trained_date": "2026-06-07T13:32:47.072305",
+  "accuracy": 0.8358437935843793,
+  "cv_mean_accuracy": 0.8408828804509734,
+  "cv_std": 0.004194890439997651,
+  "num_samples": 35847,
+  "phishing_samples": 13355,
+  "legitimate_samples": 22492
+}

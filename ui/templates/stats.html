@@ -1,0 +1,97 @@
+<!-- File: ui/templates/stats.html -->
+{% extends "base.html" %}
+
+{% block title %}Statistics - Email Intelligence{% endblock %}
+
+{% block content %}
+<div class="stats-container">
+    <h2>Email Statistics</h2>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <canvas id="labelChart"></canvas>
+        </div>
+        
+        <div class="stat-card">
+            <canvas id="dailyChart"></canvas>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Model Versions</h3>
+            <div id="modelVersions"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadStats() {
+    try {
+        const response = await fetch('/stats');
+        const stats = await response.json();
+        
+        // Label counts chart
+        const labelCtx = document.getElementById('labelChart').getContext('2d');
+        new Chart(labelCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(stats.label_counts),
+                datasets: [{
+                    data: Object.values(stats.label_counts),
+                    backgroundColor: [
+                        '#4CAF50', '#2196F3', '#FF9800', '#E91E63',
+                        '#9C27B0', '#F44336', '#FF5722', '#00BCD4'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Emails by Label'
+                    }
+                }
+            }
+        });
+        
+        // Daily counts chart
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: stats.daily_counts.map(d => d.date),
+                datasets: [{
+                    label: 'Emails Processed',
+                    data: stats.daily_counts.map(d => d.count),
+                    borderColor: '#2196F3',
+                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Daily Email Processing (Last 7 Days)'
+                    }
+                }
+            }
+        });
+        
+        // Model versions
+        const versionsHtml = Object.entries(stats.model_versions).map(([model, version]) => 
+            `<p><strong>${model}:</strong> ${version}</p>`
+        ).join('');
+        document.getElementById('modelVersions').innerHTML = versionsHtml || '<p>No model data</p>';
+        
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+loadStats();
+</script>
+{% endblock %}

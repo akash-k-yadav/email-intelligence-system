@@ -1,0 +1,623 @@
+<!-- File: ui/templates/inbox.html -->
+{% extends "base.html" %}
+
+{% block title %}Inbox - Email Intelligence{% endblock %}
+
+{% block content %}
+<div class="inbox-container">
+
+    <!-- ── HEADER ─────────────────────────────────────────── -->
+    <div class="inbox-header">
+        <h2>📬 Email Inbox</h2>
+        <div class="header-actions">
+            <button onclick="openCredModal()" class="btn btn-imap">⚙️ IMAP Settings</button>
+            <select id="fetchLimit" class="btn">
+                <option value="10">Fetch 10</option>
+                <option value="25">Fetch 25</option>
+                <option value="50" selected>Fetch 50</option>
+                <option value="100">Fetch 100</option>
+            </select>
+            <button id="fetchBtn" class="btn btn-primary" onclick="fetchEmails()">
+                <span id="fetchBtnText">Fetch Emails</span>
+                <span id="fetchSpinner" class="btn-spinner" style="display:none;"></span>
+            </button>
+            <button onclick="clearEmails()" class="btn btn-danger">🗑 Clear</button>
+        </div>
+    </div>
+
+    <!-- ── IMAP MODAL ─────────────────────────────────────── -->
+    <div id="credModal" class="modal-overlay" onclick="handleModalClick(event)">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span>⚙️ IMAP Credentials</span>
+                <button onclick="closeCredModal()" class="modal-close">×</button>
+            </div>
+            <div id="currentAccountBadge" class="account-badge">
+                📧 Configure your IMAP email account below
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <input type="email" id="credEmail" placeholder="your@email.com" class="modal-input">
+                <input type="password" id="credPassword" placeholder="App Password" class="modal-input">
+                <button onclick="saveCredentials()" class="btn btn-primary" style="width:100%; padding:10px;">
+                    Save Credentials
+                </button>
+            </div>
+            <div id="credMsg" style="margin-top:10px; font-size:13px; text-align:center;"></div>
+        </div>
+    </div>
+
+    <!-- ── SEARCH BAR (always visible) ───────────────────── -->
+    <div class="search-bar-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+            type="text"
+            id="searchInput"
+            class="search-bar-input"
+            placeholder="Search emails by subject or body..."
+            oninput="onSearchInput()"
+        >
+        <button id="clearSearchBtn" class="search-clear-btn" onclick="clearSearch()" style="display:none;">×</button>
+    </div>
+
+    <!-- ── FILTER TOGGLE ROW ──────────────────────────────── -->
+    <div class="filter-toggle-row">
+        <button class="btn-filter-toggle" onclick="toggleFilters()" id="filterToggleBtn">
+            ⚙️ Filters <span id="filterToggleArrow">▼</span>
+        </button>
+
+        <!-- Active filter badges -->
+        <div id="activeBadges" class="active-badges"></div>
+
+        <!-- Sort always visible -->
+        <div class="sort-inline">
+            <label style="font-size:0.85rem; color:#666; font-weight:500;">Sort:</label>
+            <select id="sortBy" onchange="applyFilters()" class="sort-select">
+                <option value="date|desc">Newest First</option>
+                <option value="date|asc">Oldest First</option>
+                <option value="sender|asc">By Sender</option>
+                <option value="label|asc">By Label</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- ── COLLAPSIBLE FILTER PANEL ──────────────────────── -->
+    <div id="filterPanel" class="filter-panel" style="display:none;">
+        <div class="filter-panel-inner">
+            <div class="filter-row">
+
+                <div class="filter-group">
+                    <label>Sender</label>
+                    <input type="text" id="filterSender" placeholder="name@example.com or *@gmail.com">
+                </div>
+
+                <div class="filter-group">
+                    <label>Date From</label>
+                    <input type="date" id="filterDateFrom">
+                </div>
+
+                <div class="filter-group">
+                    <label>Date To</label>
+                    <input type="date" id="filterDateTo">
+                </div>
+
+                <div class="filter-group filter-group-check">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="filterUnread">
+                        <span>Unread Only</span>
+                    </label>
+                </div>
+
+            </div>
+            <div class="filter-actions">
+                <button onclick="applyFilters()" class="btn btn-primary">Apply Filters</button>
+                <button onclick="clearFilters()" class="btn btn-secondary">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TABS ───────────────────────────────────────────── -->
+    <div class="tabs">
+        <button class="tab-button active" data-folder="all">All</button>
+        <button class="tab-button" data-folder="PRIMARY">Primary</button>
+        <button class="tab-button" data-folder="PROMOTIONS">Promotions</button>
+        <button class="tab-button" data-folder="SOCIAL">Social</button>
+        <button class="tab-button" data-folder="UPDATES">Updates</button>
+        <button class="tab-button" data-folder="SPAM">Spam</button>
+        <button class="tab-button" data-folder="PHISHING">Phishing</button>
+        <button class="tab-button" data-folder="OTP">OTP</button>
+    </div>
+
+    <!-- ── EMAIL LIST ─────────────────────────────────────── -->
+    <div class="email-list" id="emailList">
+        <div class="loading">Loading emails...</div>
+    </div>
+
+    <!-- ── PAGINATION ─────────────────────────────────────── -->
+    <div class="pagination" id="pagination"></div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPage = 1;
+let currentFolder = 'all';
+let filters = {};
+let searchTimer = null;
+let filtersVisible = false;
+let activeAccount = '';  // set by /me on page load
+
+// ── Tab switching ──────────────────────────────────────────
+document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentFolder = this.dataset.folder;
+        currentPage = 1;
+        loadEmails();
+    });
+});
+
+// ── Search bar debounced ───────────────────────────────────
+function onSearchInput() {
+    const val = document.getElementById('searchInput').value.trim();
+    document.getElementById('clearSearchBtn').style.display = val ? 'flex' : 'none';
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        if (val) { filters.keyword = val; }
+        else     { delete filters.keyword; }
+        currentPage = 1;
+        updateBadges();
+        loadEmails();
+    }, 400);
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('clearSearchBtn').style.display = 'none';
+    delete filters.keyword;
+    currentPage = 1;
+    updateBadges();
+    loadEmails();
+}
+
+// ── Filter panel toggle ────────────────────────────────────
+function toggleFilters() {
+    filtersVisible = !filtersVisible;
+    document.getElementById('filterPanel').style.display = filtersVisible ? 'block' : 'none';
+    document.getElementById('filterToggleArrow').textContent = filtersVisible ? '▲' : '▼';
+    document.getElementById('filterToggleBtn').classList.toggle('active', filtersVisible);
+}
+
+// ── Apply filters — only sends non-empty values ────────────
+function applyFilters() {
+    // Declare variables FIRST before any use
+    const sender   = document.getElementById('filterSender').value.trim();
+    const dateFrom = document.getElementById('filterDateFrom').value;
+    const dateTo   = document.getElementById('filterDateTo').value;
+    const unread   = document.getElementById('filterUnread').checked;
+    const sortVal  = document.getElementById('sortBy').value;  // e.g. "date|desc"
+    const [sortBy, sortOrder] = sortVal.split('|');
+    const keyword  = filters.keyword || null;
+
+    // Validate date range AFTER declarations
+    if (dateFrom && dateTo && dateFrom > dateTo) {
+        showNotification('❌ Date From cannot be later than Date To', 'error');
+        return;
+    }
+
+    filters = {};
+    if (keyword)   filters.keyword    = keyword;
+    if (sender)    filters.sender     = sender;
+    if (dateFrom)  filters.date_from  = dateFrom;
+    if (dateTo)    filters.date_to    = dateTo;
+    if (unread)    filters.unread     = 'true';
+    if (sortBy)    filters.sort_by    = sortBy;
+    if (sortOrder) filters.sort_order = sortOrder;
+
+    currentPage = 1;
+    updateBadges();
+    loadEmails();
+}
+
+// ── Clear all filters ──────────────────────────────────────
+function clearFilters() {
+    document.getElementById('filterSender').value   = '';
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value   = '';
+    document.getElementById('filterUnread').checked = false;
+    document.getElementById('sortBy').value         = 'date';
+    document.getElementById('searchInput').value    = '';
+    document.getElementById('clearSearchBtn').style.display = 'none';
+    filters = {};
+    currentPage = 1;
+    updateBadges();
+    loadEmails();
+}
+
+// ── Active filter badges ───────────────────────────────────
+function updateBadges() {
+    const container = document.getElementById('activeBadges');
+    const labels = {
+        keyword:   v => `🔍 "${v}"`,
+        sender:    v => `From: ${v}`,
+        date_from: v => `After: ${v}`,
+        date_to:   v => `Before: ${v}`,
+        unread:    v => `Unread Only`,
+    };
+
+    const badges = Object.entries(filters)
+        .filter(([k]) => k !== 'sort_by' && labels[k])
+        .map(([k, v]) => `
+            <span class="filter-badge">
+                ${labels[k](v)}
+                <button onclick="removeBadge('${k}')" class="badge-remove">×</button>
+            </span>
+        `).join('');
+
+    container.innerHTML = badges;
+}
+
+function removeBadge(key) {
+    delete filters[key];
+    if (key === 'keyword')   { document.getElementById('searchInput').value = ''; document.getElementById('clearSearchBtn').style.display = 'none'; }
+    if (key === 'sender')    document.getElementById('filterSender').value   = '';
+    if (key === 'date_from') document.getElementById('filterDateFrom').value = '';
+    if (key === 'date_to')   document.getElementById('filterDateTo').value   = '';
+    if (key === 'unread')    document.getElementById('filterUnread').checked = false;
+    currentPage = 1;
+    updateBadges();
+    loadEmails();
+}
+
+// ── Load emails ────────────────────────────────────────────
+async function loadEmails() {
+    const emailList = document.getElementById('emailList');
+    emailList.innerHTML = '<div class="loading">Loading emails...</div>';
+
+    try {
+        const params = new URLSearchParams({ page: currentPage, per_page: 50 });
+
+        // Always send the active account so inbox is scoped to it
+        if (activeAccount) params.append('account', activeAccount);
+
+        // Add each filter individually — avoids empty string bug
+        Object.entries(filters).forEach(([k, v]) => params.append(k, v));
+
+        if (currentFolder !== 'all') params.append('folder', currentFolder);
+
+        const response = await fetch(`/emails?${params}`);
+        const data = await response.json();
+
+        if (data.emails.length === 0) {
+            emailList.innerHTML = getEmptyState(currentFolder);
+            return;
+        }
+
+        emailList.innerHTML = data.emails.map(email => `
+            <div class="email-item ${email.unread ? 'unread' : ''}" onclick="viewEmail(${email.id})">
+                ${email.unread ? '<span class="unread-dot"></span>' : ''}
+                <div class="email-sender">${escapeHtml(email.from)}</div>
+                <div class="email-subject">${escapeHtml(email.subject)}</div>
+                <div class="email-meta">
+                    <span class="email-label label-${email.label.toLowerCase()}">${email.label}</span>
+                    <span class="email-date">${formatDate(email.date)}</span>
+                    <span style="color:${getConfidenceColor(email.confidence)}; font-weight:600; font-size:0.82rem;">
+                        ${(email.confidence * 100).toFixed(0)}%
+                    </span>
+                </div>
+            </div>
+        `).join('');
+
+        updatePagination(data.pages);
+
+    } catch (error) {
+        emailList.innerHTML = `<div class="error">Error loading emails: ${error.message}</div>`;
+    }
+}
+
+// ── Fetch emails ───────────────────────────────────────────
+async function fetchEmails() {
+    const btn     = document.getElementById('fetchBtn');
+    const btnText = document.getElementById('fetchBtnText');
+    const spinner = document.getElementById('fetchSpinner');
+
+    btn.disabled = true;
+    btnText.textContent = 'Fetching...';
+    spinner.style.display = 'inline-block';
+
+    const limit = parseInt(document.getElementById('fetchLimit').value);
+
+    try {
+        const response = await fetch('/fetch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ limit })
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            showNotification(`✅ Fetched ${data.fetched} emails, processed ${data.processed}`, 'success');
+            loadEmails();
+        } else {
+            showNotification('❌ ' + (data.error || 'Fetch failed'), 'error');
+        }
+    } catch (error) {
+        showNotification('❌ Error: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Fetch Emails';
+        spinner.style.display = 'none';
+    }
+}
+
+// ── Clear emails ───────────────────────────────────────────
+async function clearEmails() {
+    if (!confirm('Delete all stored emails from the database?')) return;
+    try {
+        const res  = await fetch('/clear_emails', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            showNotification('All emails cleared successfully', 'success');
+            loadEmails();
+        } else {
+            showNotification('Error: ' + data.message, 'error');
+        }
+    } catch (err) {
+        showNotification('Error: ' + err.message, 'error');
+    }
+}
+
+// ── IMAP Modal ─────────────────────────────────────────────
+function openCredModal() {
+    document.getElementById('credModal').style.display = 'flex';
+}
+
+function closeCredModal() {
+    document.getElementById('credModal').style.display = 'none';
+    document.getElementById('credMsg').textContent = '';
+}
+
+function handleModalClick(e) {
+    if (e.target.id === 'credModal') closeCredModal();
+}
+
+async function saveCredentials() {
+    const email    = document.getElementById('credEmail').value.trim();
+    const password = document.getElementById('credPassword').value.trim();
+    const msg      = document.getElementById('credMsg');
+
+    if (!email || !password) {
+        msg.style.color = '#f44336';
+        msg.textContent = '⚠️ Both fields are required.';
+        return;
+    }
+
+    msg.style.color = '#666';
+    msg.textContent = 'Saving...';
+
+    try {
+        const res  = await fetch('/update_env', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            msg.style.color = '#4caf50';
+            msg.textContent = '✅ Saved! Switching account...';
+            document.getElementById('credEmail').value    = '';
+            document.getElementById('credPassword').value = '';
+            // Refresh active account from server, then reload inbox
+            await loadAccount();
+            setTimeout(() => { closeCredModal(); loadEmails(); }, 1200);
+            showNotification(`Account switched to ${email}`, 'success');
+        } else {
+            msg.style.color = '#f44336';
+            msg.textContent = '❌ ' + data.message;
+        }
+    } catch (err) {
+        msg.style.color = '#f44336';
+        msg.textContent = '❌ Error: ' + err.message;
+    }
+}
+
+// ── Empty states ───────────────────────────────────────────
+function getEmptyState(folder) {
+    const states = {
+        'all':        { icon: '📭', msg: 'No emails yet. Click Fetch Emails to load your inbox.' },
+        'PRIMARY':    { icon: '✉️',  msg: 'No primary emails found.' },
+        'PROMOTIONS': { icon: '🏷️', msg: 'No promotional emails found.' },
+        'SOCIAL':     { icon: '👥', msg: 'No social emails found.' },
+        'UPDATES':    { icon: '🔔', msg: 'No update emails found.' },
+        'SPAM':       { icon: '✅', msg: 'No spam detected. Your inbox looks clean!' },
+        'PHISHING':   { icon: '🛡️', msg: 'No phishing emails detected. You\'re safe!' },
+        'OTP':        { icon: '🔐', msg: 'No OTP emails found.' },
+    };
+    const s = states[folder] || { icon: '📭', msg: 'No emails found.' };
+    return `
+        <div class="empty-state">
+            <div class="empty-state-icon">${s.icon}</div>
+            <div class="empty-state-msg">${s.msg}</div>
+        </div>`;
+}
+
+// ── Helpers ────────────────────────────────────────────────
+function getConfidenceColor(c) {
+    if (c >= 0.8) return '#4caf50';
+    if (c >= 0.6) return '#ff9800';
+    return '#f44336';
+}
+
+function updatePagination(totalPages) {
+    const pagination = document.getElementById('pagination');
+    if (totalPages <= 1) { pagination.innerHTML = ''; return; }
+    let html = '';
+    if (currentPage > 1)
+        html += `<button onclick="changePage(${currentPage - 1})">← Previous</button>`;
+    html += `<span>Page ${currentPage} of ${totalPages}</span>`;
+    if (currentPage < totalPages)
+        html += `<button onclick="changePage(${currentPage + 1})">Next →</button>`;
+    pagination.innerHTML = html;
+}
+
+function changePage(page) { currentPage = page; loadEmails(); }
+function viewEmail(id)     { window.location.href = `/email/${id}`; }
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    const now  = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7)  return `${diffDays}d ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ── Init ───────────────────────────────────────────
+async function loadAccount() {
+    try {
+        const res  = await fetch('/me');
+        const data = await res.json();
+        activeAccount = data.account || '';
+        if (activeAccount) {
+            document.getElementById('currentAccountBadge').textContent = `📧 ${activeAccount}`;
+        }
+    } catch (e) {
+        activeAccount = '';
+    }
+}
+
+loadAccount().then(() => loadEmails());
+</script>
+
+<!-- ── Extra CSS for new components ──────────────────────── -->
+<style>
+.inbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.inbox-header h2 { margin: 0; color: #1976d2; font-size: 1.4rem; }
+.header-actions  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Search bar */
+.search-bar-wrapper {
+    display: flex;
+    align-items: center;
+    background: #f8f9ff;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 0 14px;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-bar-wrapper:focus-within {
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25,118,210,0.1);
+    background: white;
+}
+.search-icon       { font-size: 1rem; color: #aaa; margin-right: 10px; }
+.search-bar-input  {
+    flex: 1; border: none; background: transparent;
+    padding: 12px 0; font-size: 0.95rem; color: #333;
+    font-family: inherit; outline: none;
+}
+.search-bar-input::placeholder { color: #bbb; }
+.search-clear-btn  {
+    background: none; border: none; font-size: 18px;
+    color: #aaa; cursor: pointer; padding: 0 4px;
+    display: flex; align-items: center; line-height: 1;
+}
+.search-clear-btn:hover { color: #555; }
+
+/* Filter toggle row */
+.filter-toggle-row {
+    display: flex; align-items: center;
+    gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.btn-filter-toggle {
+    background: #f5f5f5; border: 1px solid #ddd;
+    border-radius: 6px; padding: 7px 14px;
+    font-size: 0.85rem; font-weight: 500;
+    cursor: pointer; color: #555;
+    display: flex; align-items: center; gap: 6px;
+    transition: all 0.2s; white-space: nowrap;
+}
+.btn-filter-toggle:hover  { background: #eee; }
+.btn-filter-toggle.active { background: #e3f2fd; border-color: #1976d2; color: #1976d2; }
+
+/* Sort inline */
+.sort-inline { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.sort-select  {
+    padding: 7px 10px; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 0.85rem;
+    color: #333; background: white; cursor: pointer; outline: none;
+}
+.sort-select:focus { border-color: #1976d2; }
+
+/* Active badges */
+.active-badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.filter-badge  {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #e3f2fd; color: #1565c0;
+    border: 1px solid #90caf9; border-radius: 20px;
+    padding: 3px 10px 3px 12px;
+    font-size: 0.78rem; font-weight: 500;
+}
+.badge-remove {
+    background: none; border: none; color: #1565c0;
+    cursor: pointer; font-size: 15px; line-height: 1;
+    padding: 0; opacity: 0.7;
+}
+.badge-remove:hover { opacity: 1; }
+
+/* Collapsible filter panel */
+.filter-panel {
+    background: #f8f9ff; border: 1px solid #e8eaf6;
+    border-radius: 8px; margin-bottom: 14px;
+    animation: slideDown 0.2s ease;
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.filter-panel-inner { padding: 16px 20px; }
+.filter-row {
+    display: flex; gap: 16px;
+    flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px;
+}
+.filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 160px; }
+.filter-group label {
+    font-size: 0.8rem; font-weight: 600; color: #666;
+    text-transform: uppercase; letter-spacing: 0.3px;
+}
+.filter-group input[type="text"],
+.filter-group input[type="date"] {
+    padding: 8px 10px; border: 1px solid #ddd;
+    border-radius: 6px; font-size: 0.88rem;
+    font-family: inherit; background: white;
+    transition: border-color 0.2s; outline: none;
+}
+.filter-group input:focus { border-color: #1976d2; }
+.filter-group-check  { justify-content: flex-end; padding-bottom: 2px; }
+.checkbox-label {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 0.88rem; color: #444;
+    font-weight: 500 !important;
+    text-transform: none !important; letter-spacing: 0 !important;
+}
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+.filter-actions { display: flex; gap: 8px; }
+</style>
+{% endblock %}
